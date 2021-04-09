@@ -41,7 +41,8 @@ daily_cases.head()
 plt.plot(daily_cases)
 plt.title("Cumulative daily cases")
 plt.show()
-# Убираем накопление, вычитая текущее значение из .
+
+# Убираем накопление, вычитая текущее значение из предыдущего.
 # Первое значение последовательности сохраняем.
 daily_cases = daily_cases.diff().fillna(daily_cases[0]).astype(np.int64)
 daily_cases.head()
@@ -52,8 +53,8 @@ plt.show()
 # Смотрим, за сколько дней у нас данные
 print(daily_cases.shape)
 
-# Из 438 рядов 300 возьмём для обучения, 138 для проверки
-test_data_size = 138
+# ~3/4 рядов возьмём для обучения, 1/4 для проверки
+test_data_size = 100
 train_data = daily_cases[:-test_data_size]
 test_data = daily_cases[-test_data_size:]
 print(train_data.shape)
@@ -177,7 +178,7 @@ model, train_hist, test_hist = train_model(
     y_test
 )
 
-torch.save(model.state_dict(), "state_dict_model.pt")
+torch.save(model, "model.pt")
 
 # Смотрим потери
 plt.plot(train_hist, label="Training loss")

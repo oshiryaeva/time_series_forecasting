@@ -29,45 +29,22 @@ torch.manual_seed(RANDOM_SEED)
 
 url = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_time_series/time_series_covid19_confirmed_global.csv'
 df = pd.read_csv(url, index_col=0)
-print(df.head(5))
 
 # Удаляем столбцы province, country, latitude и longitude за ненадобностью:
 df = df.iloc[:, 4:]
 # Проверяем, есть ли пустые значения:
 df.isnull().sum().sum()
-
 # Суммируем ряды, получаем совокупное количество случаев за день:
 daily_cases = df.sum(axis=0)
 daily_cases.index = pd.to_datetime(daily_cases.index)
-daily_cases.head()
-plt.plot(daily_cases)
-plt.title("Cumulative daily cases")
-plt.show()
-# Убираем накопление, вычитая текущее значение из .
-# Первое значение последовательности сохраняем.
 daily_cases = daily_cases.diff().fillna(daily_cases[0]).astype(np.int64)
 daily_cases.head()
-plt.plot(daily_cases)
-plt.title("Daily cases")
-plt.show()
-
-# Смотрим, за сколько дней у нас данные
-print(daily_cases.shape)
-
-# Из 438 рядов 300 возьмём для обучения, 138 для проверки
-test_data_size = 138
-train_data = daily_cases[:-test_data_size]
-test_data = daily_cases[-test_data_size:]
-print(train_data.shape)
-
 # Нормализуем данные (приведём их к значениям между 0 и 1) для повышения точности и скорости обучения
 # Для нормализации возьмем MinMaxScaler из scikit-learn:
-
 scaler = MinMaxScaler()
 scaler = scaler.fit(np.expand_dims(daily_cases, axis=1))
 all_data = scaler.transform(np.expand_dims(daily_cases, axis=1))
-print(all_data.shape)
-
+print("all_data.shape " + all_data.shape)
 
 def create_sequences(data, seq_length):
     xs = []
@@ -86,40 +63,10 @@ X_all = torch.from_numpy(X_all).float()
 y_all = torch.from_numpy(y_all).float()
 
 
-def train_model(
-        model,
-        train_data,
-        train_labels,
-        test_data=None,
-        test_labels=None
-):
-    loss_fn = torch.nn.MSELoss(reduction='sum')
-    optimiser = torch.optim.Adam(model.parameters(), lr=1e-3)
-    num_epochs = 60
-    train_hist = np.zeros(num_epochs)
-    test_hist = np.zeros(num_epochs)
-    for t in range(num_epochs):
-        model.reset_hidden_state()
-        y_pred = model(X_all)
-        loss = loss_fn(y_pred.float(), y_all)
-        if t % 10 == 0:
-            print(f'Epoch {t} train loss: {loss.item()}')
-        train_hist[t] = loss.item()
-        optimiser.zero_grad()
-        loss.backward()
-        optimiser.step()
-    return model.eval(), train_hist, test_hist
+model = torch.load("model.pt")
+model.eval()
 
-
-model = CoronaVirusPredictor(
-    n_features=1,
-    n_hidden=512,
-    seq_len=seq_length,
-    n_layers=2
-)
-model, train_hist, _ = train_model(model, X_all, y_all)
-
-DAYS_TO_PREDICT = 12
+DAYS_TO_PREDICT = 30
 with torch.no_grad():
     test_seq = X_all[:1]
     preds = []
