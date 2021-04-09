@@ -1,0 +1,47 @@
+C:\Users\Admin\AppData\Local\Programs\Python\Python38\interpreter\Scripts\python.exe C:/Users/Admin/Desktop/magistr/AI/6138_time_series/use_rnn.py
+               Country/Region       Lat       Long  ...  4/6/21  4/7/21  4/8/21
+Province/State                                      ...                        
+NaN               Afghanistan  33.93911  67.709953  ...   56779   56873   56943
+NaN                   Albania  41.15330  20.168300  ...  126936  127192  127509
+NaN                   Algeria  28.03390   1.659600  ...  117879  118004  118116
+NaN                   Andorra  42.50630   1.521800  ...   12328   12363   12409
+NaN                    Angola -11.20270  17.873900  ...   22885   23010   23108
+
+[5 rows x 446 columns]
+(442,)
+(342,)
+torch.Size([336, 5, 1])
+tensor([[[0.0002],
+         [0.0000],
+         [0.0001],
+         [0.0003],
+         [0.0003]],
+
+        [[0.0000],
+         [0.0001],
+         [0.0003],
+         [0.0003],
+         [0.0016]]])
+torch.Size([336, 1])
+tensor([[0.0016],
+        [0.0002]])
+[[0.00024634]
+ [0.        ]
+ [0.00013752]
+ [0.00026637]
+ [0.00034915]
+ [0.00157885]
+ [0.00020228]
+ [0.00118964]
+ [0.00093863]
+ [0.00121835]]
+Epoch 0 train loss: 13.846772193908691 test loss: 10.587995529174805
+Epoch 10 train loss: 6.739843368530273 test loss: 4.496644973754883
+Epoch 20 train loss: 6.48747444152832 test loss: 4.071468830108643
+Epoch 30 train loss: 17.382678985595703 test loss: 436.1197509765625
+Epoch 40 train loss: 7.469343662261963 test loss: 2.592611312866211
+Epoch 50 train loss: 6.932888031005859 test loss: 4.726267337799072
+(442, 1)
+2021-04-08 00:00:00
+
+Process finished with exit code 0

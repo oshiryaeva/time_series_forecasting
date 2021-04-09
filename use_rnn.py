@@ -44,7 +44,7 @@ daily_cases.head()
 scaler = MinMaxScaler()
 scaler = scaler.fit(np.expand_dims(daily_cases, axis=1))
 all_data = scaler.transform(np.expand_dims(daily_cases, axis=1))
-print("all_data.shape " + all_data.shape)
+print(all_data.shape)
 
 def create_sequences(data, seq_length):
     xs = []
