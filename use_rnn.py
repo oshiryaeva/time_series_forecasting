@@ -1,20 +1,14 @@
 # Tutorial: https://curiousily.com/posts/time-series-forecasting-with-lstm-for-daily-coronavirus-cases/
 # Data: https://github.com/CSSEGISandData/COVID-19
 
-import torch
-import os
+import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
-from tqdm import tqdm
 import seaborn as sns
-from pylab import rcParams
-import matplotlib.pyplot as plt
-from matplotlib import rc
-from sklearn.preprocessing import MinMaxScaler
+import torch
 from pandas.plotting import register_matplotlib_converters
-from torch import nn, optim
-
-from create_rnn import CoronaVirusPredictor
+from pylab import rcParams
+from sklearn.preprocessing import MinMaxScaler
 
 sns.set(style='whitegrid', palette='muted', font_scale=1.2)
 HAPPY_COLORS_PALETTE = ["#01BEFE", "#FFDD00", "#FF7D00", "#FF006D", "#93D30C", "#8F00FF"]
@@ -56,17 +50,15 @@ def create_sequences(data, seq_length):
         ys.append(y)
     return np.array(xs), np.array(ys)
 
-
 seq_length = 5
 X_all, y_all = create_sequences(all_data, seq_length)
 X_all = torch.from_numpy(X_all).float()
 y_all = torch.from_numpy(y_all).float()
 
-
 model = torch.load("model.pt")
 model.eval()
 
-DAYS_TO_PREDICT = 30
+DAYS_TO_PREDICT = 14
 with torch.no_grad():
     test_seq = X_all[:1]
     preds = []
