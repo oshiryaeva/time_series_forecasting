@@ -1,16 +1,23 @@
-C:\Users\Admin\AppData\Local\Programs\Python\Python38\interpreter\Scripts\python.exe C:\Users\Admin\Desktop\magistr\AI\6138_time_series\setup_rnn.py
-               Country/Region       Lat       Long  ...  4/7/21  4/8/21  4/9/21
+C:\Users\Admin\AppData\Local\Programs\Python\Python38\interpreter\Scripts\python.exe C:/Users/Admin/Desktop/magistr/AI/6138_time_series/portyanka.py
+               Country/Region       Lat       Long  ...  4/15/21  4/16/21  4/17/21
 Province/State                                      ...
-NaN               Afghanistan  33.93911  67.709953  ...   56873   56943   57019
-NaN                   Albania  41.15330  20.168300  ...  127192  127509  127795
-NaN                   Algeria  28.03390   1.659600  ...  118004  118116  118251
-NaN                   Andorra  42.50630   1.521800  ...   12363   12409   12456
-NaN                    Angola -11.20270  17.873900  ...   23010   23108   23242
+NaN               Afghanistan  33.93911  67.709953  ...    57534    57612    57721
+NaN                   Albania  41.15330  20.168300  ...   129128   129307   129456
+NaN                   Algeria  28.03390   1.659600  ...   119142   119323   119486
+NaN                   Andorra  42.50630   1.521800  ...    12641    12712    12771
+NaN                    Angola -11.20270  17.873900  ...    23951    24122    24300
 
-[5 rows x 447 columns]
-(443,)
-(343,)
-torch.Size([337, 5, 1])
+[5 rows x 455 columns]
+2020-01-23     655
+2020-01-24     941
+2020-01-25    1433
+2020-01-26    2118
+2020-01-27    2927
+dtype: int64
+Days in dataset:
+(451,)
+(351,)
+torch.Size([345, 5, 1])
 tensor([[[0.0002],
          [0.0000],
          [0.0001],
@@ -22,7 +29,7 @@ tensor([[[0.0002],
          [0.0003],
          [0.0003],
          [0.0016]]])
-torch.Size([337, 1])
+torch.Size([345, 1])
 tensor([[0.0016],
         [0.0002]])
 [[0.00024634]
@@ -35,11 +42,44 @@ tensor([[0.0016],
  [0.00118964]
  [0.00093863]
  [0.00121835]]
-Epoch 0 train loss: 14.027660369873047 test loss: 10.762497901916504
-Epoch 10 train loss: 6.855550765991211 test loss: 4.63169527053833
-Epoch 20 train loss: 6.610411167144775 test loss: 4.102741241455078
-Epoch 30 train loss: 2.4204673767089844 test loss: 218.81874084472656
-Epoch 40 train loss: 8.70743465423584 test loss: 7.221797943115234
-Epoch 50 train loss: 6.96705436706543 test loss: 3.6130189895629883
+X_train.shape
+torch.Size([345, 5, 1])
+Y_train.shape
+torch.Size([345, 1])
+Epoch 0 train loss: 21.507278442382812 test loss: 14.101807594299316
+Epoch 1 train loss: 8.019765853881836 test loss: 5.197184085845947
+Epoch 2 train loss: 23.45714569091797 test loss: 0.9212083220481873
+Epoch 3 train loss: 7.643475532531738 test loss: 3.022026777267456
+Epoch 4 train loss: 8.697839736938477 test loss: 5.8925347328186035
+Epoch 5 train loss: 10.269481658935547 test loss: 7.395419120788574
+Epoch 6 train loss: 10.766166687011719 test loss: 7.791996002197266
+Epoch 7 train loss: 10.479610443115234 test loss: 7.5985589027404785
+Epoch 8 train loss: 9.832571029663086 test loss: 7.035232067108154
+Epoch 9 train loss: 9.003223419189453 test loss: 6.259819030761719
+Epoch 10 train loss: 8.161407470703125 test loss: 5.436390399932861
+Epoch 11 train loss: 7.549889087677002 test loss: 4.361054420471191
+Epoch 12 train loss: 7.399979591369629 test loss: 3.3754398822784424
+Epoch 13 train loss: 7.977563858032227 test loss: 2.5370876789093018
+Epoch 14 train loss: 8.307507514953613 test loss: 2.253671646118164
+Epoch 15 train loss: 8.162615776062012 test loss: 2.4570343494415283
+Epoch 16 train loss: 7.727012634277344 test loss: 2.917987823486328
+Epoch 17 train loss: 7.451669216156006 test loss: 3.4332900047302246
+Epoch 18 train loss: 7.459992408752441 test loss: 3.9387385845184326
+Epoch 19 train loss: 7.608717918395996 test loss: 4.271877765655518
+Epoch 20 train loss: 7.6776652336120605 test loss: 4.573888778686523
+Epoch 21 train loss: 7.733341217041016 test loss: 4.726057529449463
+Epoch 22 train loss: 7.739123344421387 test loss: 4.721418380737305
+Epoch 23 train loss: 7.710612773895264 test loss: 4.647812366485596
+Epoch 24 train loss: 7.601527214050293 test loss: 4.4337921142578125
+Epoch 25 train loss: 7.540523052215576 test loss: 4.243122577667236
+Epoch 26 train loss: 7.439583778381348 test loss: 3.9905354976654053
+Epoch 27 train loss: 7.488879203796387 test loss: 3.7322423458099365
+Epoch 28 train loss: 7.442387580871582 test loss: 3.457247257232666
+Epoch 29 train loss: 7.482976913452148 test loss: 3.259272575378418
+Epoch 30 train loss: 7.579033851623535 test loss: 3.1379499435424805
+Epoch 31 train loss: 7.548123836517334 test loss: 3.0895767211914062
+Epoch 32 train loss: 7.557223320007324 test loss: 3.0960476398468018
+Epoch 33 train loss: 7.571613788604736 test loss: 3.1800434589385986
+Epoch 34 train loss: 7.448232650756836 test loss: 3.3557188510894775
 
 Process finished with exit code 0

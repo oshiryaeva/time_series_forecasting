@@ -52,7 +52,7 @@ plt.show()
 # Смотрим, за сколько дней у нас данные
 print(daily_cases.shape)
 
-# ~3/4 рядов возьмём для обучения, 1/4 для проверки
+# ~3/4 рядов возьмём для обучения, ~1/4 для проверки
 test_data_size = 100
 train_data = daily_cases[:-test_data_size]
 test_data = daily_cases[-test_data_size:]
@@ -81,6 +81,7 @@ def create_sequences(data, seq_length):
 seq_length = 5
 X_train, y_train = create_sequences(train_data, seq_length)
 X_test, y_test = create_sequences(test_data, seq_length)
+# Преобразование массивов NumPy в тензоры PyTorch
 X_train = torch.from_numpy(X_train).float()
 y_train = torch.from_numpy(y_train).float()
 X_test = torch.from_numpy(X_test).float()
@@ -93,6 +94,7 @@ print(y_train.shape)
 print(y_train[:2])
 print(train_data[:10])
 
+
 # Функция тренировки модели
 def train_model(
         model,
@@ -103,7 +105,7 @@ def train_model(
 ):
     loss_fn = torch.nn.MSELoss(reduction='sum')
     optimiser = torch.optim.Adam(model.parameters(), lr=1e-3)
-    num_epochs = 60
+    num_epochs = 50
     train_hist = np.zeros(num_epochs)
     test_hist = np.zeros(num_epochs)
     for t in range(num_epochs):
@@ -115,22 +117,27 @@ def train_model(
                 y_test_pred = model(X_test)
                 test_loss = loss_fn(y_test_pred.float(), y_test)
             test_hist[t] = test_loss.item()
-            if t % 10 == 0:
-                print(f'Epoch {t} train loss: {loss.item()} test loss: {test_loss.item()}')
-        elif t % 10 == 0:
+            print(f'Epoch {t} train loss: {loss.item()} test loss: {test_loss.item()}')
+        else:
             print(f'Epoch {t} train loss: {loss.item()}')
         train_hist[t] = loss.item()
         optimiser.zero_grad()
         loss.backward()
         optimiser.step()
+        # Смотрим потери
+        plt.plot(train_hist, label="Training loss")
+        plt.plot(test_hist, label="Test loss")
+        plt.ylim((0, 5))
+        plt.legend()
     return model.eval(), train_hist, test_hist
+
 
 # Создаём экземпляр модели и обучаем её
 model = CoronaVirusPredictor(
     n_features=1,
     n_hidden=512,
     seq_len=seq_length,
-    n_layers=2
+    n_layers=3
 )
 model, train_hist, test_hist = train_model(
     model,
@@ -141,10 +148,3 @@ model, train_hist, test_hist = train_model(
 )
 
 torch.save(model, "model.pt")
-
-# Смотрим потери
-plt.plot(train_hist, label="Training loss")
-plt.plot(test_hist, label="Test loss")
-plt.ylim((0, 5))
-plt.legend()
-plt.show()
