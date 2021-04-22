@@ -179,7 +179,8 @@ with torch.no_grad():
         new_seq = np.append(new_seq, [pred])
         new_seq = new_seq[1:]
         test_seq = torch.as_tensor(new_seq).view(1, seq_length, 1).float()
-
+    print("preds")
+    print(preds)
 true_cases = scaler.inverse_transform(
     np.expand_dims(Y_test.flatten().numpy(), axis=0)
 ).flatten()
@@ -192,6 +193,7 @@ plt.plot(
     scaler.inverse_transform(train_data).flatten(),
     label='Historical Daily Cases'
 )
+
 plt.plot(
     daily_cases.index[len(train_data):len(train_data) + len(true_cases)],
     true_cases,
@@ -202,5 +204,6 @@ plt.plot(
     predicted_cases,
     label='Predicted Daily Cases'
 )
+
 plt.legend()
 plt.show()
