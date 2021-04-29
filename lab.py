@@ -12,57 +12,51 @@ import tensorflow as tf
 mpl.rcParams['figure.figsize'] = (8, 6)
 mpl.rcParams['axes.grid'] = False
 
-url = "weather_2013-20.csv"
+url = "weather.csv"
 df = pd.read_csv(url)
 # slice [start:stop:step], starting from index 5 take every 6th record.
 df = df[5::6]
 
-date_time = pd.to_datetime(df.pop('Time'), format='%d.%m.%Y %H:%M:%S')
-
 print(df.head())
 
-plot_cols = ['T (degC)', 'p (mbar)', 'rho (g/m**3)']
-plot_features = df[plot_cols]
-plot_features.index = date_time
-_ = plot_features.plot(subplots=True)
+date_time = pd.to_datetime(df.pop('Time'), format='%d.%m.%Y %H:%M:%S')
 
-plot_features = df[plot_cols][:480]
-plot_features.index = date_time[:480]
-_ = plot_features.plot(subplots=True)
+# График по одному признаку
+plot = df['T (degC)']
+plot.index = date_time
+plt.title('Temperature evolution in time')
+plt.plot(plot)
+plt.show()
 
-df.describe().transpose()
+# Статистика по датафрейму для выявления аномалий
+print(df.describe())
 
+# Аномальные значения заменяем нулями
 wv = df['wv (m/s)']
 bad_wv = wv == -9999.0
 wv[bad_wv] = 0.0
-
 max_wv = df['max. wv (m/s)']
 bad_max_wv = max_wv == -9999.0
 max_wv[bad_max_wv] = 0.0
-
-# The above inplace edits are reflected in the DataFrame
 df['wv (m/s)'].min()
 
+# График скорости и направления ветра
 plt.hist2d(df['wd (deg)'], df['wv (m/s)'], bins=(50, 50), vmax=400)
 plt.colorbar()
 plt.xlabel('Wind Direction [deg]')
 plt.ylabel('Wind Velocity [m/s]')
 plt.show()
 
+# Превращаем направление и скорость ветра в вектор
 wv = df.pop('wv (m/s)')
 max_wv = df.pop('max. wv (m/s)')
-
-# Convert to radians.
 wd_rad = df.pop('wd (deg)')*np.pi / 180
-
-# Calculate the wind x and y components.
 df['Wx'] = wv*np.cos(wd_rad)
 df['Wy'] = wv*np.sin(wd_rad)
-
-# Calculate the max wind x and y components.
 df['max Wx'] = max_wv*np.cos(wd_rad)
 df['max Wy'] = max_wv*np.sin(wd_rad)
 
+# Смотрим, что получилось в результате преобразования данных по ветру
 plt.hist2d(df['Wx'], df['Wy'], bins=(50, 50), vmax=400)
 plt.colorbar()
 plt.xlabel('Wind X [m/s]')
@@ -71,6 +65,7 @@ ax = plt.gca()
 ax.axis('tight')
 plt.show()
 
+# Конвертируем дату и время в секунды
 timestamp_s = date_time.map(datetime.datetime.timestamp)
 
 day = 24*60*60
@@ -87,24 +82,10 @@ plt.xlabel('Time [h]')
 plt.title('Time of day signal')
 plt.show()
 
-fft = tf.signal.rfft(df['T (degC)'])
-f_per_dataset = np.arange(0, len(fft))
-
-n_samples_h = len(df['T (degC)'])
-hours_per_year = 24*365.2524
-years_per_dataset = n_samples_h/(hours_per_year)
-
-f_per_year = f_per_dataset/years_per_dataset
-plt.step(f_per_year, np.abs(fft))
-plt.xscale('log')
-plt.ylim(0, 400000)
-plt.xlim([0.1, max(plt.xlim())])
-plt.xticks([1, 365.2524], labels=['1/Year', '1/day'])
-_ = plt.xlabel('Frequency (log scale)')
-plt.show()
-
+# Разделяем данные на три порции: 70% для тренировки, 20% для валидации и 10% для тестов.
+# Данные предварительно не перемешиваются, чтобы сохранить возможность разделения их на хронологические отрезки,
+# а также чтобы результаты валидации и проверки были более реалистичными.
 column_indices = {name: i for i, name in enumerate(df.columns)}
-
 n = len(df)
 train_df = df[0:int(n*0.7)]
 val_df = df[int(n*0.7):int(n*0.9)]
@@ -112,6 +93,7 @@ test_df = df[int(n*0.9):]
 
 num_features = df.shape[1]
 
+# Нормализация данных
 train_mean = train_df.mean()
 train_std = train_df.std()
 
@@ -126,6 +108,7 @@ ax = sns.violinplot(x='Column', y='Normalized', data=df_std)
 _ = ax.set_xticklabels(df.keys(), rotation=90)
 plt.show()
 
+# Класс для нарезки порций ("окон") данных на вхождения для тренировки (пары feature-label) и проверки
 class WindowGenerator():
   def __init__(self, input_width, label_width, shift,
                train_df=train_df, val_df=val_df, test_df=test_df,
@@ -204,6 +187,7 @@ print(f'labels shape: {example_labels.shape}')
 
 w2.example = example_inputs, example_labels
 
+# Функция для визуализации результатов
 def plot(self, model=None, plot_col='T (degC)', max_subplots=3):
   inputs, labels = self.example
   plt.figure(figsize=(12, 8))
@@ -241,8 +225,7 @@ WindowGenerator.plot = plot
 
 w2.plot()
 
-w2.plot(plot_col='p (mbar)')
-
+# Функция для создания датасета
 def make_dataset(self, data):
   data = np.array(data, dtype=np.float32)
   ds = tf.keras.preprocessing.timeseries_dataset_from_array(
@@ -294,6 +277,8 @@ for example_inputs, example_labels in w2.train.take(1):
   print(f'Inputs shape (batch, time, features): {example_inputs.shape}')
   print(f'Labels shape (batch, time, features): {example_labels.shape}')
 
+# Самая простая модель - прогнозирует один признак на один шаг вперед
+print('# Самая простая модель - прогнозирует один признак на один шаг вперед')
 single_step_window = WindowGenerator(
     input_width=1, label_width=1, shift=1,
     label_columns=['T (degC)'])
@@ -304,6 +289,7 @@ for example_inputs, example_labels in single_step_window.train.take(1):
   print(f'Inputs shape (batch, time, features): {example_inputs.shape}')
   print(f'Labels shape (batch, time, features): {example_labels.shape}')
 
+# Референсный класс для сравнения производительности моделей. Предсказывает ту же температуру, что накануне, без изменений
 class Baseline(tf.keras.Model):
   def __init__(self, label_index=None):
     super().__init__()
@@ -325,21 +311,21 @@ performance = {}
 val_performance['Baseline'] = baseline.evaluate(single_step_window.val)
 performance['Baseline'] = baseline.evaluate(single_step_window.test, verbose=0)
 
+# Модель без обучения, но с бОльшим окном
+print('# Модель без обучения, но с бОльшим окном')
 wide_window = WindowGenerator(
     input_width=24, label_width=24, shift=1,
     label_columns=['T (degC)'])
-print("wide_window")
+
 print(wide_window)
 
-print('Input shape:', wide_window.example[0].shape)
-print('Output shape:', baseline(wide_window.example[0]).shape)
-
-wide_window.plot(baseline)
-
+# Простейшая обучаемая модель: один слой линейной трансформации между входом и выходом (без функции активации)
+print('# Простейшая обучаемая модель: один слой линейной трансформации между входом и выходом (без функции активации)')
 linear = tf.keras.Sequential([
     tf.keras.layers.Dense(units=1)
 ])
 
+print('Linear (tf.keras.Sequential)')
 print('Input shape:', single_step_window.example[0].shape)
 print('Output shape:', linear(single_step_window.example[0]).shape)
 
@@ -369,6 +355,7 @@ print('Output shape:', baseline(wide_window.example[0]).shape)
 
 wide_window.plot(linear)
 
+# График весов
 plt.bar(x = range(len(train_df.columns)),
         height=linear.layers[0].kernel[:,0].numpy())
 axis = plt.gca()
@@ -376,6 +363,8 @@ axis.set_xticks(range(len(train_df.columns)))
 _ = axis.set_xticklabels(train_df.columns, rotation=90)
 plt.show()
 
+# Модель, похожая на линейную, но с добавлением нескольких плотных слоёв с фукнцией активации relu
+print('# Модель, похожая на линейную, но с добавлением нескольких плотных слоёв с фукнцией активации relu')
 dense = tf.keras.Sequential([
     tf.keras.layers.Dense(units=64, activation='relu'),
     tf.keras.layers.Dense(units=64, activation='relu'),
@@ -387,6 +376,8 @@ history = compile_and_fit(dense, single_step_window)
 val_performance['Dense'] = dense.evaluate(single_step_window.val)
 performance['Dense'] = dense.evaluate(single_step_window.test, verbose=0)
 
+# Плотная модель с бОльшим количеством входов
+print('# Плотная модель с бОльшим количеством входов')
 CONV_WIDTH = 3
 conv_window = WindowGenerator(
     input_width=CONV_WIDTH,
@@ -427,6 +418,8 @@ try:
 except Exception as e:
   print(f'\n{type(e).__name__}:{e}')
 
+# Свёрточная модель
+print('# Свёрточная модель')
 conv_model = tf.keras.Sequential([
     tf.keras.layers.Conv1D(filters=32,
                            kernel_size=(CONV_WIDTH,),
@@ -450,6 +443,8 @@ print('Input shape:', wide_window.example[0].shape)
 print('Labels shape:', wide_window.example[1].shape)
 print('Output shape:', conv_model(wide_window.example[0]).shape)
 
+# Свёрточная модель с дополнительными входами
+print('# Свёрточная модель с дополнительными входами')
 LABEL_WIDTH = 24
 INPUT_WIDTH = LABEL_WIDTH + (CONV_WIDTH - 1)
 wide_conv_window = WindowGenerator(
@@ -467,6 +462,8 @@ print('Output shape:', conv_model(wide_conv_window.example[0]).shape)
 
 wide_conv_window.plot(conv_model)
 
+# Рекуррентная модель с долгосрочной кратковременной памятью (LSTM)
+print('# Рекуррентная модель с долгосрочной кратковременной памятью (LSTM)')
 lstm_model = tf.keras.models.Sequential([
     # Shape [batch, time, features] => [batch, time, lstm_units]
     tf.keras.layers.LSTM(32, return_sequences=True),
@@ -485,6 +482,8 @@ performance['LSTM'] = lstm_model.evaluate(wide_window.test, verbose=0)
 
 wide_window.plot(lstm_model)
 
+# Сравнение эффективности моделей
+print('# Сравнение эффективности моделей')
 x = np.arange(len(performance))
 width = 0.3
 metric_name = 'mean_absolute_error'
@@ -503,6 +502,8 @@ plt.show()
 for name, value in performance.items():
   print(f'{name:12s}: {value[1]:0.4f}')
 
+# Множественный выход
+print('# Множественный выход')
 single_step_window = WindowGenerator(
     # `WindowGenerator` returns all features as labels if you
     # don't set the `label_columns` argument.
@@ -524,6 +525,7 @@ performance = {}
 val_performance['Baseline'] = baseline.evaluate(wide_window.val)
 performance['Baseline'] = baseline.evaluate(wide_window.test, verbose=0)
 
+print('tf.keras.Sequential')
 dense = tf.keras.Sequential([
     tf.keras.layers.Dense(units=64, activation='relu'),
     tf.keras.layers.Dense(units=64, activation='relu'),
@@ -536,10 +538,10 @@ IPython.display.clear_output()
 val_performance['Dense'] = dense.evaluate(single_step_window.val)
 performance['Dense'] = dense.evaluate(single_step_window.test, verbose=0)
 
-#time
 wide_window = WindowGenerator(
     input_width=24, label_width=24, shift=1)
 
+print('tf.keras.models.Sequential LSTM')
 lstm_model = tf.keras.models.Sequential([
     # Shape [batch, time, features] => [batch, time, lstm_units]
     tf.keras.layers.LSTM(32, return_sequences=True),
@@ -553,39 +555,8 @@ IPython.display.clear_output()
 val_performance['LSTM'] = lstm_model.evaluate( wide_window.val)
 performance['LSTM'] = lstm_model.evaluate( wide_window.test, verbose=0)
 
-print()
-
-class ResidualWrapper(tf.keras.Model):
-  def __init__(self, model):
-    super().__init__()
-    self.model = model
-
-  def call(self, inputs, *args, **kwargs):
-    delta = self.model(inputs, *args, **kwargs)
-
-    # The prediction for each timestep is the input
-    # from the previous time step plus the delta
-    # calculated by the model.
-    return inputs + delta
-
-#time
-residual_lstm = ResidualWrapper(
-    tf.keras.Sequential([
-    tf.keras.layers.LSTM(32, return_sequences=True),
-    tf.keras.layers.Dense(
-        num_features,
-        # The predicted deltas should start small
-        # So initialize the output layer with zeros
-        kernel_initializer=tf.initializers.zeros())
-]))
-
-history = compile_and_fit(residual_lstm, wide_window)
-
-IPython.display.clear_output()
-val_performance['Residual LSTM'] = residual_lstm.evaluate(wide_window.val)
-performance['Residual LSTM'] = residual_lstm.evaluate(wide_window.test, verbose=0)
-print()
-
+# Сравнение эффективности моделей с множественным выходом
+print('# Сравнение эффективности моделей с множественным выходом')
 x = np.arange(len(performance))
 width = 0.3
 
@@ -605,6 +576,8 @@ plt.show()
 for name, value in performance.items():
   print(f'{name:15s}: {value[1]:0.4f}')
 
+# Прогноз на заданное количество временных шагов вперед
+print('# Прогноз на заданное количество временных шагов вперед')
 OUT_STEPS = 24
 multi_window = WindowGenerator(input_width=24,
                                label_width=OUT_STEPS,
@@ -612,6 +585,7 @@ multi_window = WindowGenerator(input_width=24,
 
 multi_window.plot()
 
+# Референсный класс с прогнозом без изменений
 class MultiStepLastBaseline(tf.keras.Model):
   def call(self, inputs):
     return tf.tile(inputs[:, -1:, :], [1, OUT_STEPS, 1])
@@ -639,6 +613,8 @@ multi_val_performance['Repeat'] = repeat_baseline.evaluate(multi_window.val)
 multi_performance['Repeat'] = repeat_baseline.evaluate(multi_window.test, verbose=0)
 multi_window.plot(repeat_baseline)
 
+# Линейная
+print('tf.keras.Sequential')
 multi_linear_model = tf.keras.Sequential([
     # Take the last time-step.
     # Shape [batch, time, features] => [batch, 1, features]
@@ -657,6 +633,8 @@ multi_val_performance['Linear'] = multi_linear_model.evaluate(multi_window.val)
 multi_performance['Linear'] = multi_linear_model.evaluate(multi_window.test, verbose=0)
 multi_window.plot(multi_linear_model)
 
+# С плотными слоями
+print('tf.keras.Sequential with Dense')
 multi_dense_model = tf.keras.Sequential([
     # Take the last time step.
     # Shape [batch, time, features] => [batch, 1, features]
@@ -677,6 +655,8 @@ multi_val_performance['Dense'] = multi_dense_model.evaluate(multi_window.val)
 multi_performance['Dense'] = multi_dense_model.evaluate(multi_window.test, verbose=0)
 multi_window.plot(multi_dense_model)
 
+# CNN
+print('CNN')
 CONV_WIDTH = 3
 multi_conv_model = tf.keras.Sequential([
     # Shape [batch, time, features] => [batch, CONV_WIDTH, features]
@@ -698,6 +678,8 @@ multi_val_performance['Conv'] = multi_conv_model.evaluate(multi_window.val)
 multi_performance['Conv'] = multi_conv_model.evaluate(multi_window.test, verbose=0)
 multi_window.plot(multi_conv_model)
 
+# RNN
+print('RNN')
 multi_lstm_model = tf.keras.Sequential([
     # Shape [batch, time, features] => [batch, lstm_units]
     # Adding more `lstm_units` just overfits more quickly.
@@ -717,71 +699,8 @@ multi_val_performance['LSTM'] = multi_lstm_model.evaluate(multi_window.val)
 multi_performance['LSTM'] = multi_lstm_model.evaluate(multi_window.test, verbose=0)
 multi_window.plot(multi_lstm_model)
 
-class FeedBack(tf.keras.Model):
-  def __init__(self, units, out_steps):
-    super().__init__()
-    self.out_steps = out_steps
-    self.units = units
-    self.lstm_cell = tf.keras.layers.LSTMCell(units)
-    # Also wrap the LSTMCell in an RNN to simplify the `warmup` method.
-    self.lstm_rnn = tf.keras.layers.RNN(self.lstm_cell, return_state=True)
-    self.dense = tf.keras.layers.Dense(num_features)
-
-feedback_model = FeedBack(units=32, out_steps=OUT_STEPS)
-
-def warmup(self, inputs):
-  # inputs.shape => (batch, time, features)
-  # x.shape => (batch, lstm_units)
-  x, *state = self.lstm_rnn(inputs)
-
-  # predictions.shape => (batch, features)
-  prediction = self.dense(x)
-  return prediction, state
-
-FeedBack.warmup = warmup
-
-prediction, state = feedback_model.warmup(multi_window.example[0])
-prediction.shape
-
-def call(self, inputs, training=None):
-  # Use a TensorArray to capture dynamically unrolled outputs.
-  predictions = []
-  # Initialize the lstm state
-  prediction, state = self.warmup(inputs)
-
-  # Insert the first prediction
-  predictions.append(prediction)
-
-  # Run the rest of the prediction steps
-  for n in range(1, self.out_steps):
-    # Use the last prediction as input.
-    x = prediction
-    # Execute one lstm step.
-    x, state = self.lstm_cell(x, states=state,
-                              training=training)
-    # Convert the lstm output to a prediction.
-    prediction = self.dense(x)
-    # Add the prediction to the output
-    predictions.append(prediction)
-
-  # predictions.shape => (time, batch, features)
-  predictions = tf.stack(predictions)
-  # predictions.shape => (batch, time, features)
-  predictions = tf.transpose(predictions, [1, 0, 2])
-  return predictions
-
-FeedBack.call = call
-
-print('Output shape (batch, time, features): ', feedback_model(multi_window.example[0]).shape)
-
-history = compile_and_fit(feedback_model, multi_window)
-
-IPython.display.clear_output()
-
-multi_val_performance['AR LSTM'] = feedback_model.evaluate(multi_window.val)
-multi_performance['AR LSTM'] = feedback_model.evaluate(multi_window.test, verbose=0)
-multi_window.plot(feedback_model)
-
+# Сравнение эффективности моделей с длинным прогнозом
+print('# Сравнение эффективности моделей с длинным прогнозом')
 x = np.arange(len(multi_performance))
 width = 0.3
 
